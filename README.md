@@ -30,8 +30,17 @@ Kolone u skupu podataka:
 | Total Cost (INR) | Trošak u indijskim rupijama (uklonjen — redundantan, druga valuta) |
 
 ---
+## 3. Priprema i analiza podataka
+Priprema i analiza podataka se sastoji iz sledecih faza:
+- Ucitavanje učitavanje i čišćenje dataset-a
+- Uklanjanje obeležja koja logički ne doprinose otkrivanju obrazaca u podacima
+- Ispitivanje korelacije obeležja i izbacivanje onih koja jedinstveno ne doprinose opisu varijabiliteta izlaznog obeležja
+- Testiranje simetričnosti raspodela obeležja, radi uvođenja pravilnog standardnog skaliranja  i ujednačenog gradijenta
+- Logaritamska transformacija obeležja sa asimetričnom raspodelom
+- Konverzija kategoričkih promenljivi u numeričke one-hot encoding-om
 
-## 3. Arhitektura modela
+---
+## 4. Arhitektura modela
 
 Ukupno je definisano i trenirano 7 varijanti eedforward neuronske mreže.
 
@@ -49,7 +58,7 @@ Ukupno je definisano i trenirano 7 varijanti eedforward neuronske mreže.
 
 ---
 
-## 4. Trening
+## 5. Trening
 
 Trening se satoji iz narednih koraka:
 
@@ -62,7 +71,7 @@ Trening se satoji iz narednih koraka:
 
 ---
 
-## 5. Analiza osetljivosti i hiperparametarska optimizacija
+## 6. Analiza osetljivosti i hiperparametarska optimizacija
 
 
 U ranijoj verziji projekta, kolone `Usage Quantity` i `Cost per Quantity ($)` su bile uklonjene iz skupa obeležja — `Usage Quantity` zbog multikolinearnosti sa drugim obeležjima uočene na korelacionoj matrici, a `Cost per Quantity ($)` iz opreza da se izbegne data leakage.
@@ -73,48 +82,48 @@ Posledica je bila ta sto su se arhitekture, bez obzira na aktivacionu funkciju, 
 
 Nakon što su `Usage Quantity` i `Cost per Quantity ($)` vraćeni u skup obeležja (uz odgovarajuće skaliranje `StandardScaler`-om), performanse su se drastično poboljšale kod svih modela.
 
-## 6. Hiperparametarska optimizacija
+## 7. Hiperparametarska optimizacija
 
 Hiperparametarska optimizacija sprovedena je inkrementalno, kroz sedam varijanti modela, gde je u svakom koraku menjan po jedan ključni hiperparametar u odnosu na prethodnu varijantu, kako bi se izolovao njegov pojedinačni uticaj na performanse. Polazna tačka bio je Model 1 (Sigmoid aktivacija, SGD optimizator sa lr=0.01, MSE gubitak). U Modelu 2 ispitan je uticaj funkcije gubitka zamenom MSE sa HuberLoss, uz iste ostale hiperparametre - rezultat je bio blago lošiji, što ukazuje da HuberLoss, manje osetljiv na velika odstupanja, ovde usporava konvergenciju ka preciznoj rekonstrukciji cene. Model 3 je testirao uticaj aktivacione funkcije, zamenom Sigmoid-a sa ReLU (uz nepromenjen SGD i MSE), što je dalo poboljšanje. Model 4 je zatim testirao Tanh aktivaciju (uz isti SGD optimizator i MSE gubitak) i pokazao vrlo dobre rezultate, uporedive sa ostalim varijantama. U Modelu 5, uz identičnu Tanh arhitekturu, ispitan je uticaj optimizatora zamenom SGD-a Adam optimizatorom, što je takođe dalo visoku tačnost. Model 6 je ispitao uticaj kapaciteta mreže, povećanjem širine prvog skrivenog sloja sa 64 na 128 neurona (uz Tanh i Adam), bez značajnog dodatnog poboljšanja, što sugeriše da dodatni kapacitet mreže nije bio neophodan za ovaj problem. Konačno, Model 7 je testirao uticaj adaptivnog opadanja stope učenja uvođenjem u najbolji model do sada, tj. Model 4, u kombinaciji sa dužim treningom (150 umesto 50 epoha) i većim patience parametrom (10 umesto 8) — ova kombinacija dala je najbolje rezultate od svih testiranih varijanti.
 
 ---
 
-## 7. Rezultati evaluacije
+## 8. Rezultati evaluacije
 
 Rezultati na **validacionom skupu** za svih 7 modela (nakon vraćanja `Usage Quantity` i `Cost per Quantity ($)` u skup obeležja):
 
 | Model | MSE | RMSE | MAE | R² | MAPE |
 |---|---|---|---|---|---|
-| Model 1 (Sigmoid, SGD, MSE) | 9 207.35 | 95.95 | 45.37 | 0.9974 | 6.86% |
-| Model 2 (Sigmoid, SGD, Huber) | 34 531.66 | 185.83 | 112.62 | 0.9902 | 17.24% |
-| Model 3 (ReLU, SGD, MSE) | 4 370.79 | 66.11 | 30.94 | 0.9988 | 2.70% |
-| Model 4 (Tanh, SGD, MSE) | 873.74 | 29.55| 14.43 | 0.9998| 2.01%|
-| Model 5 (Tanh, Adam, MSE) | 3 098.78 | 55.67 | 23.63 | 0.9991 | 2.23% |
-| Model 6 (Tanh 128→32, Adam, MSE) | 2 475.35 | 49.75 | 25.75 | 0.9993 | 2.72% |
-| Model 7 (Tanh, SGD+scheduler, MSE) | 736.37 | 27.14 | 13.51 | 0.9998 | 1.77% |
+| Model 1 (Sigmoid, SGD, MSE) | 8008.42 | 89.49 | 37.96 | 0.9977 | 4.01% |
+| Model 2 (Sigmoid, SGD, Huber) | 21321.35 | 146.02 | 62.99 | 0.9940 | 6.43% |
+| Model 3 (ReLU, SGD, MSE) | 899.33 | 29.99 | 15.01 | 0.9997 | 1.48% |
+| Model 4 (Tanh, SGD, MSE) | 665.28 | 25.79 | 12.23 | 0.9998 | 1.38% |
+| Model 5 (Tanh, Adam, MSE) | 900.41 | 30.01 | 13.13 | 0.9997 | 1.20% |
+| Model 6 (Tanh 128→32, Adam, MSE) | 1153.11 | 33.96 | 14.60 | 0.9997 | 1.27% |
+| Model 7 (Tanh, SGD+scheduler, MSE) | 283.88 | 16.85 | 7.83 | 0.9999 | 0.87% |
 
-Finalna evaluacija najboljeg modela (Model 7) na test skupu (podaci koje model nikada nije video, ni tokom treninga ni tokom podešavanja):
+Finalna evaluacija najboljeg modela (Model 7) na test skupu:
 
 | Metrika | Vrednost |
 |---|---|
-| MSE | 970.93 |
-| RMSE | 31.16 |
-| MAE | 13.76 |
-| R² | 0.9997 |
-| MAPE | 1.72% |
+| MSE | 303.11 |
+| RMSE | 17.41 |
+| MAE | 7.78 |
+| R² | 0.9999 |
+| MAPE | 0.85% |
 
 Model 7 je izabran kao finalni model, jer konzistentno postiže najniže greške i na validacionom i na test skupu, uz najmanju razliku između trening i validacione greške (znak dobre generalizacije bez prekomernog prilagođavanja).
 
 ---
 
-## 8. Diskusija
+## 9. Diskusija
 
 Nakon uključivanja `Usage Quantity` i `Cost per Quantity ($)`, model suštinski uči (skoro) determinističku relaciju `trošak ≈ količina × cena po jedinici`, uz manje doprinose ostalih obeležja. To objašnjava zašto gotovo sve arhitekture dostižu R² > 0.99 - mreža ne mora da otkriva skrivene, složene obrasce, već pretežno aproksimira jednu poznatu aritmetičku operaciju nad dva ulazna broja.
 
-Ovo je važno ograničenje na koje treba skrenuti pažnju. `Usage Quantity` i `Cost per Quantity ($)` su, u praksi, već delovi konačnog obračuna troška - dostupni su tek nakon što je trošak izračunat/naplaćen. Ako je stvarni cilj projekta da se trošak unapred proceni na osnovu telemetrije korišćenja resursa (CPU/memorija/mreža/trajanje/tip servisa/region), pre nego što je trošak zaista obračunat, onda ovaj model nije prikladan za tu namenu.
+Ako je stvarni cilj projekta da se trošak unapred proceni na osnovu telemetrije korišćenja resursa (CPU/memorija/mreža/trajanje/tip servisa/region), pre nego što je trošak zaista obračunat, onda ovaj model nije prikladan za tu namenu. 
 
 ---
 
-## 8. Zaključak
+## 10. Zaključak
 
-Projekat je pokazao da je izbor ulaznih obeležja presudan faktor za uspeh modela, čak i više od arhitekture same neuronske mreže. Takođe, pokazalo se da je, za unapređenje performansi modela, uvek prvo potrebno izvršiti hiperparametarsku optimizaciju, pre nego što se odlučimo za dodavanje novih slojeva unutar mreže ili proširivanje starih. 
+Projekat je pokazao da je skup podataka i izbor ulaznih obeležja presudan faktor za uspeh modela, čak i više od arhitekture same neuronske mreže. Takođe, pokazalo se da je, za unapređenje performansi modela, uvek prvo potrebno izvršiti hiperparametarsku optimizaciju, pre nego što se odlučimo za dodavanje novih slojeva unutar mreže ili proširivanje starih. 
